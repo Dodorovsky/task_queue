@@ -1,5 +1,3 @@
-# task.py
-from dataclasses import dataclass, field
 from datetime import datetime
 import uuid
 from enum import Enum
@@ -10,29 +8,45 @@ class TaskStatus(Enum):
     DONE = "done"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
-    
-from enum import Enum
 
 class TaskPriority(Enum):
     LOW = 1
     MEDIUM = 2
     HIGH = 3
 
-@dataclass
 class Task:
-    
     def __init__(self, description, priority=TaskPriority.MEDIUM):
         self.id = str(uuid.uuid4())
         self.description = description
-        self.status = TaskStatus.PENDING
         self.priority = priority
+
         self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
 
+        self.completed_at = None
+        self.cancelled_at = None
+        self.processing_started_at = None
 
-    description: str
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    status: str = TaskStatus.PENDING
-    created_at: datetime = field(default_factory=datetime.utcnow)
+        # IMPORTANT: initialize internal status without triggering setter
+        self._status = TaskStatus.PENDING
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, new_status):
+        self._status = new_status
+        self.updated_at = datetime.utcnow()
+
+        if new_status == TaskStatus.COMPLETED:
+            self.completed_at = datetime.utcnow()
+
+        if new_status == TaskStatus.CANCELLED:
+            self.cancelled_at = datetime.utcnow()
+
+        if new_status == TaskStatus.PROCESSING:
+            self.processing_started_at = datetime.utcnow()
 
     def start(self):
         if self.status != TaskStatus.PENDING:
@@ -48,4 +62,3 @@ class Task:
         if self.status == TaskStatus.DONE:
             raise ValueError("Cannot cancel a completed task")
         self.status = TaskStatus.CANCELLED
-  

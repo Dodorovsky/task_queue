@@ -8,6 +8,7 @@ class TaskStatus:
     PROCESSING = "processing"
     DONE = "done"
     CANCELLED = "cancelled"
+    COMPLETED = "completed"
 
 @dataclass
 class Task:
@@ -30,4 +31,4 @@ class Task:
         if self.status == TaskStatus.DONE:
             raise ValueError("Cannot cancel a completed task")
         self.status = TaskStatus.CANCELLED
- 
+  

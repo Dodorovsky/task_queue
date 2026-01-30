@@ -2,13 +2,16 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 import uuid
+from enum import Enum
 
-class TaskStatus:
+class TaskStatus(Enum):
     PENDING = "pending"
     PROCESSING = "processing"
     DONE = "done"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
+    
+
 
 @dataclass
 class Task:

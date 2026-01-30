@@ -12,10 +12,16 @@ class QueueManager:
         return list(self._tasks)
 
     def get_next_task(self):
-        for task in self._tasks:
-            if task.status == TaskStatus.PENDING:
-                return task
-        return None
+        pending = [t for t in self._tasks if t.status == TaskStatus.PENDING]
+
+        if not pending:
+            return None
+
+        # Ordenar por prioridad (desc) y luego por orden de llegada
+        pending.sort(key=lambda t: t.priority.value, reverse=True)
+
+        return pending[0]
+
 
     def mark_task_completed(self, task_id):
         for task in self._tasks:

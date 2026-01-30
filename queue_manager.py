@@ -1,5 +1,5 @@
 from task_queue.task import TaskStatus
-
+from task_queue.storage import save_tasks, load_tasks
  
 class QueueManager:
     def __init__(self):
@@ -28,3 +28,13 @@ class QueueManager:
             if task.id == task_id:
                 task.status = TaskStatus.CANCELLED
                 return
+
+    def save(self, filepath):
+        save_tasks(self._tasks, filepath)
+
+    def load(self, filepath):
+        tasks = load_tasks(filepath)
+        self._tasks = tasks
+
+
+

@@ -1,7 +1,8 @@
 
 import argparse
 from task_queue.queue_manager import QueueManager
-from task_queue.task import TaskPriority
+from task_queue.task import TaskPriority, TaskStatus
+
 
 manager = QueueManager()
 manager.load("tasks.json")
@@ -90,6 +91,48 @@ def cmd_list(args):
 
     if not tasks:
         print("No tasks found.")
+        return
+
+    # --- status filters ---
+    status_filters = {
+        "pending": TaskStatus.PENDING,
+        "processing": TaskStatus.PROCESSING,
+        "done": TaskStatus.DONE,
+        "cancelled": TaskStatus.CANCELLED,
+        "completed": TaskStatus.COMPLETED,
+    }
+
+    active_status_filters = [
+        status_filters[name]
+        for name in status_filters
+        if getattr(args, name)
+    ]
+
+    if active_status_filters:
+        tasks = [t for t in tasks if t.status in active_status_filters]
+
+    # --- priority filter ---
+    if args.priority:
+        priority_map = {
+            "low": TaskPriority.LOW,
+            "medium": TaskPriority.MEDIUM,
+            "high": TaskPriority.HIGH,
+        }
+        selected_priority = priority_map[args.priority]
+        tasks = [t for t in tasks if t.priority == selected_priority]
+
+    # --- sorting ---
+    if args.sort:
+        if args.sort == "created":
+            tasks = sorted(tasks, key=lambda t: t.created_at)
+        elif args.sort == "updated":
+            tasks = sorted(tasks, key=lambda t: t.updated_at)
+        elif args.sort == "priority":
+            tasks = sorted(tasks, key=lambda t: t.priority.value)
+
+    # --- output ---
+    if not tasks:
+        print("No tasks match the filters.")
         return
 
     for task in tasks:

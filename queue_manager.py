@@ -33,6 +33,12 @@ class QueueManager:
             if task.id == task_id:
                 task.status = TaskStatus.COMPLETED
                 return
+            
+    def to_dict(self):
+        return {
+            "tasks": [task.to_dict() for task in self._tasks]
+        }
+
 
     def cancel_task(self, task_id):
         for task in self._tasks:
@@ -46,6 +52,4 @@ class QueueManager:
     def load(self, filepath):
         tasks = load_tasks(filepath)
         self._tasks = tasks
-
-
 

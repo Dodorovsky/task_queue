@@ -62,3 +62,31 @@ class Task:
         if self.status == TaskStatus.DONE:
             raise ValueError("Cannot cancel a completed task")
         self.status = TaskStatus.CANCELLED
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "description": self.description,
+            "priority": self.priority.value,
+            "status": self.status.value,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "cancelled_at": self.cancelled_at.isoformat() if self.cancelled_at else None,
+            "processing_started_at": self.processing_started_at.isoformat() if self.processing_started_at else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        task = cls(
+            description=data["description"],
+            priority=TaskPriority(data["priority"])
+        )
+        task.id = data["id"]
+        task._status = TaskStatus(data["status"])
+        task.created_at = datetime.fromisoformat(data["created_at"])
+        task.updated_at = datetime.fromisoformat(data["updated_at"])
+        task.completed_at = datetime.fromisoformat(data["completed_at"]) if data["completed_at"] else None
+        task.cancelled_at = datetime.fromisoformat(data["cancelled_at"]) if data["cancelled_at"] else None
+        task.processing_started_at = datetime.fromisoformat(data["processing_started_at"]) if data["processing_started_at"] else None
+        return task

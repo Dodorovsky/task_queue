@@ -4,6 +4,8 @@ from task_queue.queue_manager import QueueManager
 from task_queue.task import TaskPriority
 
 manager = QueueManager()
+manager.load("tasks.json")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -39,6 +41,7 @@ def main():
         choices=["created", "updated", "priority"],
         help="Sort tasks"
     )
+    list_parser.set_defaults(func=cmd_list)
 
     # --- next ---
     subparsers.add_parser("next", help="Show next task by priority")
@@ -79,8 +82,19 @@ def cmd_add(args):
 
     priority = priority_map[args.priority]
     task = manager.add_task(args.description, priority=priority)
-
+    manager.save("tasks.json")
     print(f"Task created: {task.id} [{task.priority.name}]")
+    
+def cmd_list(args):
+    tasks = manager._tasks
+
+    if not tasks:
+        print("No tasks found.")
+        return
+
+    for task in tasks:
+        print(f"{task.id} | {task.status.value} | {task.priority.name} | {task.description}")
+
 
 
 def handle_command(args):
@@ -91,5 +105,6 @@ def handle_command(args):
         
 if __name__ == "__main__":
     main()
+
 
 

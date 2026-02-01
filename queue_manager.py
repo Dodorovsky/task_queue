@@ -1,8 +1,7 @@
 from task_queue.task import TaskStatus
 from task_queue.storage import save_tasks, load_tasks
 from task_queue.task import Task, TaskPriority
-
-
+import json
 class QueueManager:
     def __init__(self):
         self._tasks = []
@@ -44,8 +43,11 @@ class QueueManager:
                 task.status = TaskStatus.CANCELLED
                 return
 
-    def save(self, filepath):
-        save_tasks(self._tasks, filepath)
+    def save(self, filename):
+        data = [task.to_dict() for task in self._tasks]
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=2)
+
 
     def load(self, filepath):
         tasks = load_tasks(filepath)

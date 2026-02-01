@@ -3,6 +3,7 @@ import argparse
 from task_queue.queue_manager import QueueManager
 from task_queue.task import TaskPriority, TaskStatus
 from datetime import datetime
+from task_queue.task import Task
 
 
 
@@ -127,6 +128,12 @@ def main():
     # --- load ---
     load_parser = subparsers.add_parser("load", help="Load tasks from file")
     load_parser.add_argument("file")
+    
+    # --- start ---
+    start_parser = subparsers.add_parser("start", help="Start a task manually")
+    start_parser.add_argument("id")
+    start_parser.set_defaults(func=cmd_start)
+
 
     args = parser.parse_args()
     print(args)
@@ -136,16 +143,26 @@ def main():
 
 
 def cmd_add(args):
-    priority_map = {
-        "low": TaskPriority.LOW,
-        "medium": TaskPriority.MEDIUM,
-        "high": TaskPriority.HIGH,
-    }
+    priority = TaskPriority[args.priority.upper()]
 
-    priority = priority_map[args.priority]
-    task = manager.add_task(args.description, priority=priority)
+    task = manager.add_task(
+        description=args.description,
+        priority=priority,
+    )
+
     manager.save("tasks.json")
-    print(f"Task created: {task.id} [{task.priority.name}]")
+
+    status = format_status(task)
+    prio = format_priority(task)
+
+    print("Task created:")
+    print("─" * 60)
+    print(f"{status:<20} {prio:<10} {task.description}")
+    print(f"ID: {task.id}")
+
+
+
+
     
 def cmd_list(args):
     tasks = manager._tasks
@@ -271,6 +288,32 @@ def cmd_next(args):
     print("─" * 60)
     print(f"{status:<20} {priority:<10} {next_task.description}")
     print(f"ID: {next_task.id}")
+
+def cmd_start(args):
+    task_id = args.id
+    task = manager.get(task_id)
+
+    if not task:
+        print(f"No task found with ID {task_id}")
+        return
+
+    if task.status != TaskStatus.PENDING:
+        print(f"Task {task_id} is not pending and cannot be started.")
+        return
+
+    task.status = TaskStatus.PROCESSING
+    task.processing_started_at = datetime.now()
+    task.updated_at = datetime.now()
+
+    manager.save("tasks.json")
+
+    status = format_status(task)
+    priority = format_priority(task)
+
+    print("Task started:")
+    print("─" * 60)
+    print(f"{status:<20} {priority:<10} {task.description}")
+    print(f"ID: {task.id}")
 
 
         

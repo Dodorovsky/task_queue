@@ -27,12 +27,11 @@ def load_tasks(filepath):
 
     tasks = []
     for item in data:
-        task = Task(item["description"])
-        task.id = item["id"]
-        task.status = TaskStatus(item["status"]) 
+        task = Task.from_dict(item)   
         tasks.append(task)
 
     return tasks
+
 
 
 

@@ -2,6 +2,9 @@
 import argparse
 from task_queue.queue_manager import QueueManager
 from task_queue.task import TaskPriority, TaskStatus
+from datetime import datetime
+
+
 
 # Simple ANSI colors
 RESET = "\033[0m"
@@ -21,7 +24,6 @@ STATUS_ICONS = {
 
 manager = QueueManager()
 manager.load("tasks.json")
-
 
 
 def main():
@@ -80,9 +82,6 @@ def main():
     # --- load ---
     load_parser = subparsers.add_parser("load", help="Load tasks from file")
     load_parser.add_argument("file")
-    
-
-    
 
     args = parser.parse_args()
     print(args)
@@ -209,7 +208,15 @@ def cmd_next(args):
         key=lambda t: (-t.priority.value, t.created_at)
     )
 
-    next_task = sorted_tasks[1]
+    next_task = sorted_tasks[0]
+
+    # Update task state
+    next_task.status = TaskStatus.PROCESSING
+    next_task.processing_started_at = datetime.now()
+    next_task.updated_at = datetime.now()
+
+    # Save changes
+    manager.save("tasks.json")
 
     # Visual formatting
     status = format_status(next_task)
@@ -219,6 +226,7 @@ def cmd_next(args):
     print("─" * 60)
     print(f"{status:<20} {priority:<10} {next_task.description}")
     print(f"ID: {next_task.id}")
+
 
 
         

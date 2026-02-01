@@ -32,14 +32,11 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-
     # --- add ---
     add_parser = subparsers.add_parser("add", help="Create a new task")
     add_parser.add_argument("description")
     add_parser.add_argument("--priority", choices=["low", "medium", "high"], default="medium")
     add_parser.set_defaults(func=cmd_add)
-
-
 
     # --- list ---
     list_parser = subparsers.add_parser("list", help="List tasks")
@@ -61,12 +58,13 @@ def main():
     list_parser.set_defaults(func=cmd_list)
 
     # --- next ---
-    subparsers.add_parser("next", help="Show next task by priority")
+    _next_parser = subparsers.add_parser("next")
+    _next_parser.set_defaults(func=cmd_next)
 
     # --- start ---
     start_parser = subparsers.add_parser("start", help="Start a task")
     start_parser.add_argument("id")
-
+    
     # --- complete ---
     complete_parser = subparsers.add_parser("complete", help="Complete a task")
     complete_parser.add_argument("id")
@@ -82,6 +80,9 @@ def main():
     # --- load ---
     load_parser = subparsers.add_parser("load", help="Load tasks from file")
     load_parser.add_argument("file")
+    
+
+    
 
     args = parser.parse_args()
     print(args)
@@ -191,6 +192,34 @@ def format_priority(task):
     }.get(task.priority.name, RESET)
 
     return f"{color}{task.priority.name}{RESET}"
+
+def cmd_next(args):
+    tasks = manager._tasks
+
+    # Filter only pending tasks
+    pending_tasks = [t for t in tasks if t.status == TaskStatus.PENDING]
+
+    if not pending_tasks:
+        print("No pending tasks available.")
+        return
+
+    # Sort by priority (HIGH > MEDIUM > LOW) and then by creation time
+    sorted_tasks = sorted(
+        pending_tasks,
+        key=lambda t: (-t.priority.value, t.created_at)
+    )
+
+    next_task = sorted_tasks[1]
+
+    # Visual formatting
+    status = format_status(next_task)
+    priority = format_priority(next_task)
+
+    print("Next task:")
+    print("─" * 60)
+    print(f"{status:<20} {priority:<10} {next_task.description}")
+    print(f"ID: {next_task.id}")
+
 
         
         

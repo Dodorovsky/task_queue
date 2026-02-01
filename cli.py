@@ -25,6 +25,55 @@ STATUS_ICONS = {
 manager = QueueManager()
 manager.load("tasks.json")
 
+def cmd_complete(args):
+    task_id = args.id
+    task = manager.get(task_id)
+
+    if not task:
+        print(f"No task found with ID {task_id}")
+        return
+
+    # Update state
+    task.status = TaskStatus.DONE
+    task.updated_at = datetime.now()
+
+    # Save
+    manager.save("tasks.json")
+
+    # Visual output
+    status = format_status(task)
+    priority = format_priority(task)
+
+    print("Task completed:")
+    print("─" * 60)
+    print(f"{status:<20} {priority:<10} {task.description}")
+    print(f"ID: {task.id}")
+
+def cmd_cancel(args):
+    task_id = args.id
+    task = manager.get(task_id)
+
+    if not task:
+        print(f"No task found with ID {task_id}")
+        return
+
+    # Update state
+    task.status = TaskStatus.CANCELLED
+    task.updated_at = datetime.now()
+
+    # Save
+    manager.save("tasks.json")
+
+    # Visual output
+    status = format_status(task)
+    priority = format_priority(task)
+
+    print("Task cancelled:")
+    print("─" * 60)
+    print(f"{status:<20} {priority:<10} {task.description}")
+    print(f"ID: {task.id}")
+
+        
 
 def main():
     parser = argparse.ArgumentParser(
@@ -33,6 +82,7 @@ def main():
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
+
 
     # --- add ---
     add_parser = subparsers.add_parser("add", help="Create a new task")
@@ -59,21 +109,16 @@ def main():
     )
     list_parser.set_defaults(func=cmd_list)
 
-    # --- next ---
-    _next_parser = subparsers.add_parser("next")
-    _next_parser.set_defaults(func=cmd_next)
-
-    # --- start ---
-    start_parser = subparsers.add_parser("start", help="Start a task")
-    start_parser.add_argument("id")
     
-    # --- complete ---
-    complete_parser = subparsers.add_parser("complete", help="Complete a task")
-    complete_parser.add_argument("id")
+   # --- complete ---
+    complete_parser = subparsers.add_parser("complete", help="Mark task as completed")
+    complete_parser.add_argument("id", help="Task ID")
+    complete_parser.set_defaults(func=cmd_complete)
 
     # --- cancel ---
     cancel_parser = subparsers.add_parser("cancel", help="Cancel a task")
-    cancel_parser.add_argument("id")
+    cancel_parser.add_argument("id", help="Task ID")
+    cancel_parser.set_defaults(func=cmd_cancel)
 
     # --- save ---
     save_parser = subparsers.add_parser("save", help="Save tasks to file")
@@ -228,8 +273,6 @@ def cmd_next(args):
     print(f"ID: {next_task.id}")
 
 
-
-        
         
 if __name__ == "__main__":
     main()

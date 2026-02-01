@@ -12,7 +12,6 @@ class QueueManager:
         self._tasks.append(task)
         return task
 
-
     def get_all_tasks(self):
         return list(self._tasks)
 
@@ -26,7 +25,6 @@ class QueueManager:
         pending.sort(key=lambda t: t.priority.value, reverse=True)
 
         return pending[0]
-
 
     def mark_task_completed(self, task_id):
         for task in self._tasks:
@@ -52,4 +50,11 @@ class QueueManager:
     def load(self, filepath):
         tasks = load_tasks(filepath)
         self._tasks = tasks
+        
+    def get(self, task_id):
+        for task in self._tasks:
+            if task.id == task_id:
+                return task
+        return None
+
 

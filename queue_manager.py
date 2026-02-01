@@ -1,12 +1,17 @@
 from task_queue.task import TaskStatus
 from task_queue.storage import save_tasks, load_tasks
- 
+from task_queue.task import Task, TaskPriority
+
+
 class QueueManager:
     def __init__(self):
         self._tasks = []
 
-    def add_task(self, task):
+    def add_task(self, description, priority=TaskPriority.MEDIUM):
+        task = Task(description, priority=priority)
         self._tasks.append(task)
+        return task
+
 
     def get_all_tasks(self):
         return list(self._tasks)

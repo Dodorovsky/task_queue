@@ -3,9 +3,25 @@ import argparse
 from task_queue.queue_manager import QueueManager
 from task_queue.task import TaskPriority, TaskStatus
 
+# Simple ANSI colors
+RESET = "\033[0m"
+YELLOW = "\033[33m"
+GREEN = "\033[32m"
+RED = "\033[31m"
+BLUE = "\033[34m"
+MAGENTA = "\033[35m"
+
+STATUS_ICONS = {
+    "pending": "🟡",
+    "processing": "🔵",
+    "done": "🟢",
+    "completed": "🟢",
+    "cancelled": "🔴",
+}
 
 manager = QueueManager()
 manager.load("tasks.json")
+
 
 
 def main():
@@ -135,16 +151,48 @@ def cmd_list(args):
         print("No tasks match the filters.")
         return
 
+    # Header
+    print(f"{'STATUS':<20} {'PRIORITY':<10} DESCRIPTION")
+    print("─" * 60)
+
+
     for task in tasks:
-        print(f"{task.id} | {task.status.value} | {task.priority.name} | {task.description}")
+        status = format_status(task)
+        priority = format_priority(task)
 
-
+        print(f"{status:<20} {priority:<10} {task.description}")
 
 def handle_command(args):
     if hasattr(args, "func"):
         args.func(args)
     else:
         print("No command provided. Use --help for usage.")
+        
+def format_status(task):
+    status = task.status.value
+
+    color = {
+        "pending": YELLOW,
+        "processing": BLUE,
+        "done": GREEN,
+        "completed": GREEN,
+        "cancelled": RED,
+    }.get(status, RESET)
+
+    icon = STATUS_ICONS.get(status, "•")
+
+    return f"{icon} {color}{status}{RESET}"
+
+def format_priority(task):
+    color = {
+        "LOW": GREEN,
+        "MEDIUM": YELLOW,
+        "HIGH": RED,
+    }.get(task.priority.name, RESET)
+
+    return f"{color}{task.priority.name}{RESET}"
+
+        
         
 if __name__ == "__main__":
     main()

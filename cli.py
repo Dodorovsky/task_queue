@@ -5,6 +5,7 @@ from task_queue.task import TaskPriority, TaskStatus
 from datetime import datetime
 from task_queue.task import Task
 
+TASKS_FILE = "tasks.json"
 
 
 # Simple ANSI colors
@@ -18,12 +19,11 @@ MAGENTA = "\033[35m"
 STATUS_ICONS = {
     "pending": "🟡",
     "processing": "🔵",
-    "done": "🟢",
     "completed": "🟢",
     "cancelled": "🔴",
 }
 
-manager = QueueManager()
+manager = QueueManager(TASKS_FILE)
 manager.load("tasks.json")
 
 def cmd_complete(args):
@@ -35,7 +35,7 @@ def cmd_complete(args):
         return
 
     # Update state
-    task.status = TaskStatus.DONE
+    task.status = TaskStatus.COMPLETED
     task.updated_at = datetime.now()
 
     # Save
@@ -73,9 +73,7 @@ def cmd_cancel(args):
     print("─" * 60)
     print(f"{status:<20} {priority:<10} {task.description}")
     print(f"ID: {task.id}")
-
-        
-
+    
 def main():
     parser = argparse.ArgumentParser(
         prog="task",
@@ -95,7 +93,6 @@ def main():
     list_parser = subparsers.add_parser("list", help="List tasks")
     list_parser.add_argument("--pending", action="store_true")
     list_parser.add_argument("--processing", action="store_true")
-    list_parser.add_argument("--done", action="store_true")
     list_parser.add_argument("--cancelled", action="store_true")
     list_parser.add_argument("--completed", action="store_true")
     list_parser.add_argument(
@@ -108,6 +105,7 @@ def main():
         choices=["created", "updated", "priority"],
         help="Sort tasks"
     )
+    
     list_parser.set_defaults(func=cmd_list)
 
     
@@ -134,13 +132,46 @@ def main():
     start_parser.add_argument("id")
     start_parser.set_defaults(func=cmd_start)
 
+    purge_parser = subparsers.add_parser("purge", help="Remove completed and cancelled tasks")
+    purge_parser.set_defaults(func=cmd_purge)
+
+    next_parser = subparsers.add_parser("next")
+    next_parser.set_defaults(func=cmd_next)
+
 
     args = parser.parse_args()
     print(args)
 
     handle_command(args)
     
+def handle_command(args):
+    if hasattr(args, "func"):
+        args.func(args)
+    else:
+        print("No command provided. Use --help for usage.")
+        
+def format_status(task):
+    status = task.status.value
 
+    color = {
+        "pending": YELLOW,
+        "processing": BLUE,
+        "completed": GREEN,
+        "cancelled": RED,
+    }.get(status, RESET)
+
+    icon = STATUS_ICONS.get(status, "•")
+
+    return f"{icon} {color}{status}{RESET}"
+
+def format_priority(task):
+    color = {
+        "LOW": GREEN,
+        "MEDIUM": YELLOW,
+        "HIGH": RED,
+    }.get(task.priority.name, RESET)
+
+    return f"{color}{task.priority.name}{RESET}"
 
 def cmd_add(args):
     priority = TaskPriority[args.priority.upper()]
@@ -159,10 +190,6 @@ def cmd_add(args):
     print("─" * 60)
     print(f"{status:<20} {prio:<10} {task.description}")
     print(f"ID: {task.id}")
-
-
-
-
     
 def cmd_list(args):
     tasks = manager._tasks
@@ -175,7 +202,6 @@ def cmd_list(args):
     status_filters = {
         "pending": TaskStatus.PENDING,
         "processing": TaskStatus.PROCESSING,
-        "done": TaskStatus.DONE,
         "cancelled": TaskStatus.CANCELLED,
         "completed": TaskStatus.COMPLETED,
     }
@@ -198,6 +224,10 @@ def cmd_list(args):
         }
         selected_priority = priority_map[args.priority]
         tasks = [t for t in tasks if t.priority == selected_priority]
+        
+    if args.sort == "priority":
+        tasks.sort(key=lambda t: t.priority.value, reverse=True)
+
 
     # --- sorting ---
     if args.sort:
@@ -223,36 +253,6 @@ def cmd_list(args):
         priority = format_priority(task)
 
         print(f"{status:<20} {priority:<10} {task.description}")
-
-def handle_command(args):
-    if hasattr(args, "func"):
-        args.func(args)
-    else:
-        print("No command provided. Use --help for usage.")
-        
-def format_status(task):
-    status = task.status.value
-
-    color = {
-        "pending": YELLOW,
-        "processing": BLUE,
-        "done": GREEN,
-        "completed": GREEN,
-        "cancelled": RED,
-    }.get(status, RESET)
-
-    icon = STATUS_ICONS.get(status, "•")
-
-    return f"{icon} {color}{status}{RESET}"
-
-def format_priority(task):
-    color = {
-        "LOW": GREEN,
-        "MEDIUM": YELLOW,
-        "HIGH": RED,
-    }.get(task.priority.name, RESET)
-
-    return f"{color}{task.priority.name}{RESET}"
 
 def cmd_next(args):
     tasks = manager._tasks
@@ -314,6 +314,21 @@ def cmd_start(args):
     print("─" * 60)
     print(f"{status:<20} {priority:<10} {task.description}")
     print(f"ID: {task.id}")
+    
+def cmd_purge(args):
+    manager = QueueManager("tasks.json")
+
+    before = len(manager._tasks)
+    manager._tasks = [
+        t for t in manager._tasks
+        if t.status not in (TaskStatus.COMPLETED, TaskStatus.CANCELLED)
+    ]
+    after = len(manager._tasks)
+
+    manager.save("tasks.json")
+
+    print(f"Purged {before - after} tasks")
+
 
 
         

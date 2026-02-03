@@ -2,16 +2,20 @@ from task_queue.task import TaskStatus
 from task_queue.storage import save_tasks, load_tasks
 from task_queue.task import Task, TaskPriority
 import json
+
+
 class QueueManager:
-    def __init__(self):
-        self._tasks = []
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self._tasks = load_tasks(filepath)
+
 
     def add_task(self, description, priority=TaskPriority.MEDIUM):
         task = Task(description, priority=priority)
         self._tasks.append(task)
         return task
 
-    def get_all_tasks(self):
+    def get_all_tasks(self): 
         return list(self._tasks)
 
     def get_next_task(self):
@@ -59,4 +63,16 @@ class QueueManager:
                 return task
         return None
 
+
+    def purge(self):
+        before = len(self._tasks)
+        self._tasks = [
+            t for t in self._tasks
+            if t.status not in (TaskStatus.COMPLETED, TaskStatus.CANCELLED)
+        ]
+        after = len(self._tasks)
+
+        self.save(self.filepath)
+
+        return before - after
 

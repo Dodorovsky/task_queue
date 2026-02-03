@@ -5,7 +5,6 @@ from enum import Enum
 class TaskStatus(Enum):
     PENDING = "pending"
     PROCESSING = "processing"
-    DONE = "done"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
 
@@ -56,10 +55,10 @@ class Task:
     def complete(self):
         if self.status not in (TaskStatus.PENDING, TaskStatus.PROCESSING):
             raise ValueError("Only pending or processing tasks can be completed")
-        self.status = TaskStatus.DONE
+        self.status = TaskStatus.COMPLETED
 
     def cancel(self):
-        if self.status == TaskStatus.DONE:
+        if self.status == TaskStatus.COMPLETED:
             raise ValueError("Cannot cancel a completed task")
         self.status = TaskStatus.CANCELLED
 
@@ -68,8 +67,8 @@ class Task:
         return {
             "id": self.id,
             "description": self.description,
-            "status": self.status.name,
-            "priority": self.priority.name,  # ← CLAVE
+            "status": self._status.value,
+            "priority": self.priority.name, 
 
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
@@ -80,15 +79,13 @@ class Task:
 
     @classmethod
     def from_dict(cls, data):
-        # Crear la tarea usando SOLO los argumentos que acepta el constructor
         task = cls(
             description=data["description"],
             priority=TaskPriority[data.get("priority", "MEDIUM")]
         )
 
-        # Restaurar campos que NO van por constructor
         task.id = data["id"]
-        task._status = TaskStatus[data["status"]]
+        task._status = TaskStatus(data["status"])  # ← FIX
 
         task.created_at = datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
         task.updated_at = datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else None
@@ -97,6 +94,7 @@ class Task:
         task.cancelled_at = datetime.fromisoformat(data["cancelled_at"]) if data.get("cancelled_at") else None
 
         return task
+
 
 
 

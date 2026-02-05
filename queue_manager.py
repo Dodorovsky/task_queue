@@ -1,9 +1,9 @@
-from task_queue.task import TaskStatus
-from task_queue.storage import save_tasks, load_tasks
-from task_queue.task import Task, TaskPriority
+from task import TaskStatus
+from storage import save_tasks, load_tasks
+from task import Task, TaskPriority
 import json
 
-
+ 
 class QueueManager:
     def __init__(self, filepath):
         self.filepath = filepath
@@ -15,8 +15,9 @@ class QueueManager:
         self._tasks.append(task)
         return task
 
-    def get_all_tasks(self): 
-        return list(self._tasks)
+    def get_all_tasks(self):
+        return self._tasks
+
 
     def get_next_task(self):
         pending = [t for t in self._tasks if t.status == TaskStatus.PENDING]
@@ -46,6 +47,7 @@ class QueueManager:
             if task.id == task_id:
                 task.status = TaskStatus.CANCELLED
                 return
+            
 
     def save(self, filename):
         data = [task.to_dict() for task in self._tasks]
@@ -62,6 +64,18 @@ class QueueManager:
             if task.id == task_id:
                 return task
         return None
+        
+    def delete_task(self, task_id: int):
+        self._tasks = [t for t in self._tasks if t.id != task_id]
+        self.save(self.filepath)
+
+    def mark_task_done(self, task_id: str):
+        for task in self._tasks:
+            if task.id == task_id:
+                task.status = TaskStatus.DONE
+                break
+        self.save(self.filepath)
+
 
 
     def purge(self):

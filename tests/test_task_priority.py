@@ -1,6 +1,6 @@
 import pytest
-from task_queue.task import Task, TaskPriority, TaskStatus
-from task_queue.queue_manager import QueueManager
+from task import Task, TaskPriority, TaskStatus
+from queue_manager import QueueManager
 
 
 def test_task_has_default_priority():

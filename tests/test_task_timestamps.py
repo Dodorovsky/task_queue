@@ -1,5 +1,5 @@
 from datetime import datetime
-from task_queue.task import Task, TaskStatus, TaskPriority
+from task import Task, TaskStatus, TaskPriority
 
 
 def test_task_has_created_at():

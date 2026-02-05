@@ -1,12 +1,11 @@
 
 import argparse
-from task_queue.queue_manager import QueueManager
-from task_queue.task import TaskPriority, TaskStatus
+from queue_manager import QueueManager
+from task import TaskPriority, TaskStatus
 from datetime import datetime
-from task_queue.task import Task
+from task import Task
 
 TASKS_FILE = "tasks.json"
-
 
 # Simple ANSI colors
 RESET = "\033[0m"

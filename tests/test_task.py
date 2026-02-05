@@ -1,6 +1,6 @@
 # tests/test_task.py
 import pytest
-from task_queue.task import Task, TaskStatus
+from task import Task, TaskStatus
  
 def test_task_initial_state():
     t = Task("Test task")

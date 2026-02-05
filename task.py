@@ -5,6 +5,7 @@ from enum import Enum
 class TaskStatus(Enum):
     PENDING = "pending"
     PROCESSING = "processing"
+    DONE = "DONE"
     CANCELLED = "cancelled"
     COMPLETED = "completed"
 

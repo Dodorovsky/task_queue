@@ -1,7 +1,7 @@
 import pytest
 import os
-from task_queue.task import Task, TaskStatus, TaskPriority
-from task_queue.queue_manager import QueueManager
+from task import Task, TaskStatus, TaskPriority
+from queue_manager import QueueManager
 
 def test_add_task(tmp_path):
     filepath = tmp_path / "tasks.json"

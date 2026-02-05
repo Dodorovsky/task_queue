@@ -1,7 +1,7 @@
 import json
 import os
-from task_queue.task import Task, TaskStatus
-from task_queue.storage import save_tasks, load_tasks
+from task import Task, TaskStatus
+from storage import save_tasks, load_tasks
  
 
 def test_save_and_load_tasks(tmp_path):

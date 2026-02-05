@@ -1,5 +1,5 @@
 import json
-from task_queue.task import Task, TaskStatus
+from task import Task, TaskStatus
 
 
 def save_tasks(tasks, filepath):

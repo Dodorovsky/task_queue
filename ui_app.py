@@ -51,14 +51,12 @@ def sort_by(column):
     elif column == "Priority":
         qm._tasks.sort(key=lambda t: t.priority.value, reverse=reverse)
 
-    # update arrows
-    dpg.set_item_label("btn_id", header_label("ID"))
+
     dpg.set_item_label("btn_desc", header_label("Description"))
     dpg.set_item_label("btn_status", header_label("Status"))
     dpg.set_item_label("btn_priority", header_label("Priority"))
 
     refresh_task_list()
-
 
 def header_label(col):
     direction = sort_directions[col]
@@ -66,20 +64,30 @@ def header_label(col):
    
     return f"{col}{arrow}"
 
-
 def refresh_task_list():
+    # Delete previous rows
     children = dpg.get_item_children("task_table", 1)
     if children:
         for row in children:
             dpg.delete_item(row)
-            
     for t in qm.get_all_tasks():
         with dpg.table_row(parent="task_table"):
-            dpg.add_text(str(t.id))
-            dpg.add_text(t.description)
-            dpg.add_text(t.status.value)
-            priority_text = dpg.add_text(t.priority.name)
 
+            # Description
+            if t.status == TaskStatus.DONE:
+                desc_item = dpg.add_text(t.description)
+                dpg.configure_item(desc_item, color=(180, 199, 224))  # verde/gris suave
+            else:
+                desc_item = dpg.add_text(t.description)
+                dpg.configure_item(desc_item, color=(150, 200, 255))  # azul suave
+
+            # Status: gray by default, soft green if DONE
+            status_color = (180, 180, 180) if t.status != TaskStatus.DONE else (120, 220, 120)
+            status_item = dpg.add_text(t.status.value)
+            dpg.configure_item(status_item, color=status_color)
+
+            # Priority with color and capital letter
+            priority_text = dpg.add_text(t.priority.name.upper())
             if t.priority.name == "HIGH":
                 dpg.bind_item_theme(priority_text, "priority_high_theme")
             elif t.priority.name == "MEDIUM":
@@ -87,7 +95,7 @@ def refresh_task_list():
             else:
                 dpg.bind_item_theme(priority_text, "priority_low_theme")
 
-
+            # Botones de acciones
             with dpg.group(horizontal=True):
                 dpg.add_button(
                     label="Done",
@@ -102,7 +110,7 @@ def refresh_task_list():
 
 dpg.create_context()
 
-with dpg.window(label="Task Queue UI", width=600, height=400):
+with dpg.window(label="Task Queue UI", width=600, height=420):
     dpg.add_text("Add a new task")
 
     dpg.add_input_text(label="Title", tag="title_input")
@@ -127,29 +135,24 @@ with dpg.window(label="Task Queue UI", width=600, height=400):
         with dpg.theme_component(dpg.mvText):
             dpg.add_theme_color(dpg.mvThemeCol_Text, (80, 200, 120))  
 
-
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=2)   
+        dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=105)
+        dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status"), width=105)
+        dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority"), width=150)
+        dpg.add_button(label="Actions", tag="btn_actions", width=170)
 
-        dpg.add_button(label=header_label("ID"), tag="btn_id", callback=lambda: sort_by("ID"), width=100)
-        dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=100)
-        dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status"), width=80)
-        dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority"), width=120)
-
-        dpg.add_spacer(width=140)  
-    
-    with dpg.child_window(tag="task_list_container", width=570, height=200, border=True):
+    with dpg.child_window(tag="task_list_container", width=570, height=225, border=True):
         with dpg.table(tag="task_table", header_row=False):
-            dpg.add_table_column(label="ID")
             dpg.add_table_column(label="Description")
             dpg.add_table_column(label="Status")
             dpg.add_table_column(label="Priority")
-            dpg.add_table_column(label="Actions", width_fixed=True, width=140)
+            dpg.add_table_column(label="Actions")
 
-dpg.create_viewport(title="Task Queue UI", width=600, height=400)
+
+dpg.create_viewport(title="Task Queue UI", width=600, height=450)
 dpg.setup_dearpygui()
 refresh_task_list()
 dpg.show_viewport()
 dpg.start_dearpygui()
 dpg.destroy_context()
-

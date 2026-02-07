@@ -1,6 +1,15 @@
 import dearpygui.dearpygui as dpg
+import queue_manager
+import sys, os
 from queue_manager import QueueManager
 from task import TaskPriority, TaskStatus
+
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 
 TASKS_FILE = "tasks.json"
 qm = QueueManager(TASKS_FILE)
@@ -76,37 +85,51 @@ def refresh_task_list():
             # Description
             if t.status == TaskStatus.DONE:
                 desc_item = dpg.add_text(t.description)
-                dpg.configure_item(desc_item, color=(180, 199, 224))  # verde/gris suave
+                dpg.configure_item(desc_item, color=(180, 199, 224))# verde/gris suave
+                
             else:
                 desc_item = dpg.add_text(t.description)
                 dpg.configure_item(desc_item, color=(150, 200, 255))  # azul suave
 
             # Status: gray by default, soft green if DONE
-            status_color = (180, 180, 180) if t.status != TaskStatus.DONE else (120, 220, 120)
+            status_color = (237, 132, 0) if t.status != TaskStatus.DONE else (120, 220, 120)
             status_item = dpg.add_text(t.status.value)
             dpg.configure_item(status_item, color=status_color)
 
             # Priority with color and capital letter
-            priority_text = dpg.add_text(t.priority.name.upper())
+            priority_text = dpg.add_text( t.priority.name.upper())
             if t.priority.name == "HIGH":
                 dpg.bind_item_theme(priority_text, "priority_high_theme")
+
             elif t.priority.name == "MEDIUM":
                 dpg.bind_item_theme(priority_text, "priority_medium_theme")
+
             else:
                 dpg.bind_item_theme(priority_text, "priority_low_theme")
+                
+            if t.status == TaskStatus.DONE:
+                if t.priority.name == "HIGH":
+                    dpg.configure_item(priority_text, color=(153, 93, 86))
+                if t.priority.name == "MEDIUM":
+                    dpg.configure_item(priority_text, color=(153, 149, 86))
+                if t.priority.name == "LOW":
+                    dpg.configure_item(priority_text, color=(86, 153, 96))
 
             # Botones de acciones
             with dpg.group(horizontal=True):
-                dpg.add_button(
+                btn_done = dpg.add_button(
                     label="Done",
                     callback=mark_done_callback,
                     user_data=t.id
                 )
-                dpg.add_button(
+                btn_delete = dpg.add_button(
                     label="Delete",
                     callback=delete_task_callback,
                     user_data=t.id
                 )
+                dpg.bind_item_theme(btn_done, "green_button_theme")
+                dpg.bind_item_theme(btn_delete, "red_button_theme")
+
 
 dpg.create_context()
 
@@ -118,7 +141,7 @@ with dpg.window(label="Task Queue UI", width=600, height=420):
                   default_value="MEDIUM",
                   label="Priority",
                   tag="priority_combo")
-    dpg.add_button(label="Add Task", callback=add_task_callback)
+    add_task_btn = dpg.add_button(label="Add Task", callback=add_task_callback)
 
     dpg.add_spacer(height=10)
     dpg.add_text("Task List")
@@ -134,25 +157,52 @@ with dpg.window(label="Task Queue UI", width=600, height=420):
     with dpg.theme(tag="priority_low_theme"):
         with dpg.theme_component(dpg.mvText):
             dpg.add_theme_color(dpg.mvThemeCol_Text, (80, 200, 120))  
+            
+    with dpg.theme(tag="green_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (33, 54, 35), category=dpg.mvThemeCat_Core)
 
+    with dpg.theme(tag="red_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (59, 34, 31), category=dpg.mvThemeCat_Core)
+
+    with dpg.theme(tag="header_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (71, 49, 46), category=dpg.mvThemeCat_Core)
+            
+    dpg.bind_item_theme(add_task_btn, "header_button_theme")
+    
+    
     with dpg.group(horizontal=True):
-        dpg.add_spacer(width=2)   
-        dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=105)
-        dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status"), width=105)
-        dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority"), width=150)
-        dpg.add_button(label="Actions", tag="btn_actions", width=170)
+        dpg.add_spacer(width=0)   
+        btn_desc = dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=230)
+        btn_status = dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status"), width=100)
+        btn_priority = dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority"), width=100)
+        btn_apcionts = dpg.add_button(label="Actions", tag="btn_actions", width=105)
 
     with dpg.child_window(tag="task_list_container", width=570, height=225, border=True):
         with dpg.table(tag="task_table", header_row=False):
-            dpg.add_table_column(label="Description")
+            dpg.add_table_column(label="Description", width_fixed=True, init_width_or_weight=250)
             dpg.add_table_column(label="Status")
             dpg.add_table_column(label="Priority")
             dpg.add_table_column(label="Actions")
+            
+            dpg.bind_item_theme(btn_desc, "header_button_theme")
+            dpg.bind_item_theme(btn_status, "header_button_theme")
+            dpg.bind_item_theme(btn_priority, "header_button_theme")
+            dpg.bind_item_theme(btn_apcionts, "header_button_theme")
+
+
 
 
 dpg.create_viewport(title="Task Queue UI", width=600, height=450)
+icon_path = resource_path("logo.ico")
+dpg.set_viewport_small_icon(icon_path)
+dpg.set_viewport_large_icon(icon_path)
 dpg.setup_dearpygui()
 refresh_task_list()
 dpg.show_viewport()
+
+
 dpg.start_dearpygui()
 dpg.destroy_context()

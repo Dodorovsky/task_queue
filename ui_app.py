@@ -172,7 +172,7 @@ with dpg.window(label="Task Queue UI", width=600, height=420):
             
     dpg.bind_item_theme(add_task_btn, "header_button_theme")
     
-    
+
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=0)   
         btn_desc = dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=230)
@@ -195,7 +195,8 @@ with dpg.window(label="Task Queue UI", width=600, height=420):
 
 
 
-dpg.create_viewport(title="Task Queue UI", width=600, height=450)
+dpg.create_viewport(title="Task Queue UI", width=600, height=450, min_width=600, max_width=600,
+                    min_height=450, max_height=450)
 icon_path = resource_path("logo.ico")
 dpg.set_viewport_small_icon(icon_path)
 dpg.set_viewport_large_icon(icon_path)

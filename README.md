@@ -17,6 +17,12 @@ This project is part of an ongoing exploration of CLI tooling, workflow automati
 This project is actively evolving.
 The core architecture is stable and fully tested, but some CLI commands and UX details are still being refined.
 
+### Current UI Preview 
+
+Here is a preview of the current interface (work in progress): 
+
+![Screenshot](screenshot.png)
+
 If you explore the code, you may find:
 
 - Commands that are being improved or reorganized

@@ -78,6 +78,12 @@ def header_label(col):
    
     return f"{col}{arrow}"
 
+def priority_callback(sender, app_data, user_data):
+    task_id, new_priority = user_data
+    qm.update_task_priority(task_id, new_priority)
+    refresh_task_list()
+
+
 def refresh_task_list():
     # Delete previous rows
     children = dpg.get_item_children("task_table", 1)
@@ -102,23 +108,33 @@ def refresh_task_list():
             dpg.configure_item(status_item, color=status_color)
 
             # Priority with color and capital letter
-            priority_text = dpg.add_text( t.priority.name.upper())
+            # Priority text (clickable)
+            priority_tag = f"priority_text_{t.id}"
+            priority_text = dpg.add_text(t.priority.name.upper(), tag=priority_tag)
+
+            # Apply your existing color themes
             if t.priority.name == "HIGH":
                 dpg.bind_item_theme(priority_text, "priority_high_theme")
-
             elif t.priority.name == "MEDIUM":
                 dpg.bind_item_theme(priority_text, "priority_medium_theme")
-
             else:
                 dpg.bind_item_theme(priority_text, "priority_low_theme")
-                
+
+            # If DONE, override color (your existing logic)
             if t.status == TaskStatus.DONE:
                 if t.priority.name == "HIGH":
                     dpg.configure_item(priority_text, color=(153, 93, 86))
-                if t.priority.name == "MEDIUM":
+                elif t.priority.name == "MEDIUM":
                     dpg.configure_item(priority_text, color=(153, 149, 86))
-                if t.priority.name == "LOW":
+                else:
                     dpg.configure_item(priority_text, color=(86, 153, 96))
+
+            # Popup to change priority
+            with dpg.popup(priority_tag, mousebutton=dpg.mvMouseButton_Left):
+                dpg.add_button(label="LOW",    callback=priority_callback, user_data=(t.id, "LOW"))
+                dpg.add_button(label="MEDIUM", callback=priority_callback, user_data=(t.id, "MEDIUM"))
+                dpg.add_button(label="HIGH",   callback=priority_callback, user_data=(t.id, "HIGH"))
+
 
             # Botones de acciones
             with dpg.group(horizontal=True):

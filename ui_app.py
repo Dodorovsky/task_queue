@@ -107,7 +107,7 @@ def refresh_task_list():
             status_item = dpg.add_text(t.status.value)
             dpg.configure_item(status_item, color=status_color)
 
-            # Priority with color and capital letter
+           
             # Priority text (clickable)
             priority_tag = f"priority_text_{t.id}"
             priority_text = dpg.add_text(t.priority.name.upper(), tag=priority_tag)
@@ -136,7 +136,7 @@ def refresh_task_list():
                 dpg.add_button(label="HIGH",   callback=priority_callback, user_data=(t.id, "HIGH"))
 
 
-            # Botones de acciones
+            # Action buttons
             with dpg.group(horizontal=True):
                 btn_done = dpg.add_button(
                     label="Done",

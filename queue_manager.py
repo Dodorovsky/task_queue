@@ -75,8 +75,13 @@ class QueueManager:
                 task.status = TaskStatus.DONE
                 break
         self.save(self.filepath)
-
-
+        
+    def mark_task_undone(self, task_id: str):
+        for task in self._tasks:
+            if task.id == task_id:
+                task.status = TaskStatus.PENDING
+                break
+        self.save(self.filepath)
 
     def purge(self):
         before = len(self._tasks)

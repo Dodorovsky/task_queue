@@ -15,7 +15,6 @@ def save_tasks(tasks, filepath):
         json.dump(data, f, indent=2)
 
 
-
 def load_tasks(filepath):
     try:
         with open(filepath, "r", encoding="utf-8") as f:

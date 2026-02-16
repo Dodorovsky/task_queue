@@ -45,6 +45,11 @@ def mark_done_callback(sender, app_data, user_data):
     qm.mark_task_done(task_id)
     refresh_task_list()
     
+def mark_undone_callback(sender, app_data, user_data):
+    task_id = user_data
+    qm.mark_task_undone(task_id)
+    refresh_task_list()
+    
 def sort_by(column):
     direction = sort_directions[column]
     sort_directions[column] *= -1
@@ -127,13 +132,20 @@ def refresh_task_list():
                     callback=delete_task_callback,
                     user_data=t.id
                 )
+                btn_undone = dpg.add_button(
+                    label="Undone",
+                    callback=mark_undone_callback,
+                    user_data=t.id
+                )
+
                 dpg.bind_item_theme(btn_done, "green_button_theme")
                 dpg.bind_item_theme(btn_delete, "red_button_theme")
+                dpg.bind_item_theme(btn_undone, "orange_button_theme")
 
 
 dpg.create_context()
 
-with dpg.window(label="Task Queue UI", width=600, height=420):
+with dpg.window(label="Task Queue UI", width=730, height=420):
     dpg.add_text("Add a new task")
 
     dpg.add_input_text(label="Title", tag="title_input")
@@ -160,11 +172,15 @@ with dpg.window(label="Task Queue UI", width=600, height=420):
             
     with dpg.theme(tag="green_button_theme"):
         with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (33, 54, 35), category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (45, 87, 47), category=dpg.mvThemeCat_Core)
 
     with dpg.theme(tag="red_button_theme"):
         with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (59, 34, 31), category=dpg.mvThemeCat_Core)
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (105, 34, 13), category=dpg.mvThemeCat_Core)
+
+    with dpg.theme(tag="orange_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (112, 69, 6), category=dpg.mvThemeCat_Core)
 
     with dpg.theme(tag="header_button_theme"):
         with dpg.theme_component(dpg.mvButton):
@@ -175,27 +191,31 @@ with dpg.window(label="Task Queue UI", width=600, height=420):
 
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=0)   
-        btn_desc = dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=230)
+        btn_desc = dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=300)
         btn_status = dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status"), width=100)
         btn_priority = dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority"), width=100)
-        btn_apcionts = dpg.add_button(label="Actions", tag="btn_actions", width=105)
+        btn_apcionts = dpg.add_button(label="Actions", tag="btn_actions", width=160)
 
-    with dpg.child_window(tag="task_list_container", width=570, height=225, border=True):
-        with dpg.table(tag="task_table", header_row=False):
-            dpg.add_table_column(label="Description", width_fixed=True, init_width_or_weight=250)
-            dpg.add_table_column(label="Status")
-            dpg.add_table_column(label="Priority")
-            dpg.add_table_column(label="Actions")
+    with dpg.child_window(tag="task_list_container", width=700, height=225, border=True):
+        with dpg.table(
+            tag="task_table",
+            header_row=False,
+            resizable=False,
+            policy=dpg.mvTable_SizingFixedFit
+        ):
+            dpg.add_table_column(label="Description", width_fixed=True, init_width_or_weight=300)
+            dpg.add_table_column(label="Status",      width_fixed=True, init_width_or_weight=100)
+            dpg.add_table_column(label="Priority",    width_fixed=True, init_width_or_weight=100)
+            dpg.add_table_column(label="Actions",     width_fixed=True, init_width_or_weight=180)
+
+
             
             dpg.bind_item_theme(btn_desc, "header_button_theme")
             dpg.bind_item_theme(btn_status, "header_button_theme")
             dpg.bind_item_theme(btn_priority, "header_button_theme")
             dpg.bind_item_theme(btn_apcionts, "header_button_theme")
 
-
-
-
-dpg.create_viewport(title="Task Queue UI", width=600, height=450, min_width=600, max_width=600,
+dpg.create_viewport(title="Task Queue UI", width=730, height=450, min_width=600, max_width=730,
                     min_height=450, max_height=450)
 icon_path = resource_path("logo.ico")
 dpg.set_viewport_small_icon(icon_path)

@@ -29,7 +29,7 @@ class Task:
 
         # IMPORTANT: initialize internal status without triggering setter
         self._status = TaskStatus.PENDING
-
+ 
     @property
     def status(self):
         return self._status

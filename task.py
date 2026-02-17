@@ -111,6 +111,7 @@ class Task:
             "processing_started_at": self.processing_started_at.isoformat() if self.processing_started_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "cancelled_at": self.cancelled_at.isoformat() if self.cancelled_at else None,
+            "parent_id": self.parent_id
         }
 
     @classmethod

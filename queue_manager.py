@@ -1,5 +1,4 @@
 from task import TaskStatus
-from storage import save_tasks, load_tasks
 from task import Task, TaskPriority
 import json
 from datetime import datetime
@@ -68,6 +67,7 @@ class QueueManager:
             json.dump(data, f, indent=2)
 
 
+
     def load(self, filepath):
         try:
             with open(filepath) as f:
@@ -77,21 +77,29 @@ class QueueManager:
 
         tasks = []
         for item in data:
+
+            parent_id = item.get("parent_id")
+            if parent_id in ("", None):
+                parent_id = None
+
             task = Task(
                 description=item["description"],
-                priority=item["priority"],
-                status=item["status"],
-                parent_id=item.get("parent_id"),
-                id=item["id"],
-                created_at=item.get("created_at"),
-                updated_at=item.get("updated_at"),
-                completed_at=item.get("completed_at"),
-                cancelled_at=item.get("cancelled_at"),
-                processing_started_at=item.get("processing_started_at")
+                priority=TaskPriority[item["priority"]],
+                parent_id=parent_id
             )
+
+            task.id = item["id"]
+            task.status = TaskStatus[item["status"]]
+            task.created_at = datetime.fromisoformat(item["created_at"])
+            task.updated_at = datetime.fromisoformat(item["updated_at"])
+            task.completed_at = datetime.fromisoformat(item["completed_at"]) if item["completed_at"] else None
+            task.cancelled_at = datetime.fromisoformat(item["cancelled_at"]) if item["cancelled_at"] else None
+            task.processing_started_at = datetime.fromisoformat(item["processing_started_at"]) if item["processing_started_at"] else None
+
             tasks.append(task)
 
         return tasks
+
 
     def add_task_with_subtasks(self, description, priority, subtasks_descriptions):
         # 1. Crear tarea principal

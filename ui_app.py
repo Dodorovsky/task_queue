@@ -3,6 +3,7 @@ import queue_manager
 import sys, os
 from queue_manager import QueueManager
 from task import TaskPriority, TaskStatus, Task
+from datetime import datetime
 
 
 def resource_path(relative_path):
@@ -114,9 +115,9 @@ def header_label(col):
 def priority_callback(sender, app_data, user_data):
     task_id, new_priority = user_data
     qm.update_task_priority(task_id, new_priority)
+    refresh_subtasks()
     refresh_main_tasks()
-   
-   
+
 def confirm_add_subtask():
     desc = dpg.get_value("subtask_input").strip()
     if not desc:
@@ -157,10 +158,11 @@ def refresh_main_tasks():
             status_item = dpg.add_text(t.status.value)
             dpg.configure_item(status_item, color=status_color)
 
-            # Priority (clickable)
+            # Priority text (clickable)
             priority_tag = f"priority_text_{t.id}"
-            priority_text = dpg.add_text(t.priority.name.upper(), tag=priority_tag)
+            priority_text = dpg.add_selectable(label=t.priority.name.upper(), tag=priority_tag)
 
+            # Apply your existing color themes
             if t.priority.name == "HIGH":
                 dpg.bind_item_theme(priority_text, "priority_high_theme")
             elif t.priority.name == "MEDIUM":
@@ -168,16 +170,17 @@ def refresh_main_tasks():
             else:
                 dpg.bind_item_theme(priority_text, "priority_low_theme")
 
+            # If DONE, override color (your existing logic)
             if t.status == TaskStatus.DONE:
                 if t.priority.name == "HIGH":
-                    dpg.configure_item(priority_text, color=(153, 93, 86))
+                    dpg.bind_item_theme(priority_text, "priority_highdone_theme")
                 elif t.priority.name == "MEDIUM":
-                    dpg.configure_item(priority_text, color=(153, 149, 86))
+                    dpg.bind_item_theme(priority_text, "priority_mediumdone_theme")
                 else:
-                    dpg.configure_item(priority_text, color=(86, 153, 96))
+                    dpg.bind_item_theme(priority_text, "priority_lowdone_theme")
 
-            # Popup para cambiar prioridad
-            with dpg.popup(priority_tag, mousebutton=dpg.mvMouseButton_Left):
+
+            with dpg.popup(parent=priority_text, mousebutton=dpg.mvMouseButton_Left):
                 dpg.add_button(label="LOW",    callback=priority_callback, user_data=(t.id, "LOW"))
                 dpg.add_button(label="MEDIUM", callback=priority_callback, user_data=(t.id, "MEDIUM"))
                 dpg.add_button(label="HIGH",   callback=priority_callback, user_data=(t.id, "HIGH"))
@@ -216,9 +219,11 @@ def refresh_main_tasks():
                 )
 
 
-                dpg.bind_item_theme(btn_done, "green_button_theme")
-                dpg.bind_item_theme(btn_delete, "red_button_theme")
-                dpg.bind_item_theme(btn_undone, "orange_button_theme")
+            dpg.bind_item_theme(btn_done, "done_button_theme")
+            dpg.bind_item_theme(btn_delete, "delete_button_theme")
+            dpg.bind_item_theme(btn_undone, "undone_button_theme")
+            dpg.bind_item_theme(btn_add_sub, "select_button_theme")
+            dpg.bind_item_theme(btn_select, "select_button_theme")
 
 
 def refresh_subtasks():
@@ -250,10 +255,11 @@ def refresh_subtasks():
             status_item = dpg.add_text(t.status.value)
             dpg.configure_item(status_item, color=status_color)
 
-            # --- Priority (clickable) ---
-            priority_tag = f"sub_priority_text_{t.id}"
-            priority_text = dpg.add_text(t.priority.name.upper(), tag=priority_tag)
+            # Priority text (clickable)
+            priority_tag = f"priority_text_{t.id}"
+            priority_text = dpg.add_selectable(label=t.priority.name.upper(), tag=priority_tag)
 
+            # Apply your existing color themes
             if t.priority.name == "HIGH":
                 dpg.bind_item_theme(priority_text, "priority_high_theme")
             elif t.priority.name == "MEDIUM":
@@ -261,17 +267,17 @@ def refresh_subtasks():
             else:
                 dpg.bind_item_theme(priority_text, "priority_low_theme")
 
-            # override color if DONE
+            # If DONE, override color (your existing logic)
             if t.status == TaskStatus.DONE:
                 if t.priority.name == "HIGH":
-                    dpg.configure_item(priority_text, color=(153, 93, 86))
+                    dpg.bind_item_theme(priority_text, "priority_highdone_theme")
                 elif t.priority.name == "MEDIUM":
-                    dpg.configure_item(priority_text, color=(153, 149, 86))
+                    dpg.bind_item_theme(priority_text, "priority_mediumdone_theme")
                 else:
-                    dpg.configure_item(priority_text, color=(86, 153, 96))
+                    dpg.bind_item_theme(priority_text, "priority_done_theme")
 
-            # popup para cambiar prioridad
-            with dpg.popup(priority_tag, mousebutton=dpg.mvMouseButton_Left):
+
+            with dpg.popup(parent=priority_text, mousebutton=dpg.mvMouseButton_Left):
                 dpg.add_button(label="LOW",    callback=priority_callback, user_data=(t.id, "LOW"))
                 dpg.add_button(label="MEDIUM", callback=priority_callback, user_data=(t.id, "MEDIUM"))
                 dpg.add_button(label="HIGH",   callback=priority_callback, user_data=(t.id, "HIGH"))
@@ -295,10 +301,9 @@ def refresh_subtasks():
                     callback=delete_task_callback,
                     user_data=t.id
                 )
-
-                dpg.bind_item_theme(btn_done, "green_button_theme")
-                dpg.bind_item_theme(btn_delete, "red_button_theme")
-                dpg.bind_item_theme(btn_undone, "orange_button_theme")
+            dpg.bind_item_theme(btn_done, "done_button_theme")
+            dpg.bind_item_theme(btn_delete, "delete_button_theme")
+            dpg.bind_item_theme(btn_undone, "undone_button_theme")
 
 def open_subtask_popup(sender, app_data, user_data):
     global selected_parent_for_subtask
@@ -322,29 +327,51 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
     dpg.add_spacer(height=10)
     dpg.add_text("Task List")
     
+    # PRIORITY DONE COLORS
+    with dpg.theme(tag="priority_highdone_theme"):
+        with dpg.theme_component(dpg.mvSelectable):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (153, 93, 86))
+            
+    with dpg.theme(tag="priority_mediumdone_theme"):
+        with dpg.theme_component(dpg.mvSelectable):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (153, 149, 86))
+            
+    with dpg.theme(tag="priority_lowdone_theme"):
+        with dpg.theme_component(dpg.mvSelectable):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (86, 153, 96))
+            
+    
+    #PRIORITY UNDONE COLORS
     with dpg.theme(tag="priority_high_theme"):
-        with dpg.theme_component(dpg.mvText):
+        with dpg.theme_component(dpg.mvSelectable):
             dpg.add_theme_color(dpg.mvThemeCol_Text, (255, 80, 80))  
 
     with dpg.theme(tag="priority_medium_theme"):
-        with dpg.theme_component(dpg.mvText):
+        with dpg.theme_component(dpg.mvSelectable):
             dpg.add_theme_color(dpg.mvThemeCol_Text, (255, 200, 0))  
 
     with dpg.theme(tag="priority_low_theme"):
-        with dpg.theme_component(dpg.mvText):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, (80, 200, 120))  
+        with dpg.theme_component(dpg.mvSelectable):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (80, 200, 120))
             
-    with dpg.theme(tag="green_button_theme"):
+    # ACTIONS BUTTON COLORS
+
+    with dpg.theme(tag="select_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (112, 69, 6), category=dpg.mvThemeCat_Core)
+
+    with dpg.theme(tag="done_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (45, 87, 47), category=dpg.mvThemeCat_Core)
 
-    with dpg.theme(tag="red_button_theme"):
+    with dpg.theme(tag="undone_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (67, 92, 72), category=dpg.mvThemeCat_Core)
+
+    with dpg.theme(tag="delete_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (105, 34, 13), category=dpg.mvThemeCat_Core)
 
-    with dpg.theme(tag="orange_button_theme"):
-        with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (112, 69, 6), category=dpg.mvThemeCat_Core)
 
     with dpg.theme(tag="header_button_theme"):
         with dpg.theme_component(dpg.mvButton):
@@ -383,7 +410,7 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
     
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=55)
-        dpg.add_text("Subtasks", color=(200, 200, 200))  # título simple
+        dpg.add_text("SUBTASKS", color=(200, 200, 200))  # título simple
         
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=55)
@@ -433,7 +460,7 @@ print("Parent de main_tasks_container:", dpg.get_item_parent("main_tasks_contain
 print("Tareas en memoria:", len(qm._tasks))
 for t in qm._tasks:
     print("  -", repr(t), type(t), getattr(t, "status", None), getattr(t, "priority", None))
-
+refresh_subtasks()
 refresh_main_tasks()
 
 dpg.show_viewport()

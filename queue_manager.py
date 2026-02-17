@@ -157,11 +157,12 @@ class QueueManager:
 
         return before - after
     
-    def update_task_priority(self, task_id: str, new_priority: str):
-        for task in self._tasks:
-            if task.id == task_id:
-                task.priority = TaskPriority[new_priority]  # usa tu enum
-                break
-        self.save(self.filepath)
+    def update_task_priority(self, task_id, new_priority):
+        task = self.get(task_id)
+        if task:
+            task.priority = TaskPriority[new_priority]  # ← importante
+            task.updated_at = datetime.now()
+            self.save(self.filepath)
+
 
 

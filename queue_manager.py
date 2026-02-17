@@ -8,6 +8,7 @@ class QueueManager:
     def __init__(self, filepath):
         self.filepath = filepath
         self._tasks = self.load(filepath)
+        self.selected_task_id = None
 
     def add_task(self, description, priority=TaskPriority.MEDIUM):
         task = Task(description, priority=priority)

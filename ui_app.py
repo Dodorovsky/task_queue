@@ -51,8 +51,6 @@ def delete_task_callback(sender, app_data, user_data):
     else:
         refresh_subtasks()
 
-
-    
 def mark_done_callback(sender, app_data, user_data):
     task_id = user_data
     task = qm.get_task(task_id)
@@ -105,6 +103,28 @@ def sort_by(column):
     dpg.set_item_label("btn_priority", header_label("Priority"))
 
     refresh_main_tasks()
+
+def sub_sort_by(column):
+    direction = sort_directions[column]
+    sort_directions[column] *= -1
+
+    reverse = (direction == -1)
+
+    if column == "ID":
+        qm._tasks.sort(key=lambda t: t.id, reverse=reverse)
+    elif column == "Description":
+        qm._tasks.sort(key=lambda t: t.description.lower(), reverse=reverse)
+    elif column == "Status":
+        qm._tasks.sort(key=lambda t: t.status.value, reverse=reverse)
+    elif column == "Priority":
+        qm._tasks.sort(key=lambda t: t.priority.value, reverse=reverse)
+
+
+    dpg.set_item_label("btn_desc", header_label("Description"))
+    dpg.set_item_label("btn_status", header_label("Status"))
+    dpg.set_item_label("btn_priority", header_label("Priority"))
+
+    refresh_subtasks()
 
 def header_label(col):
     direction = sort_directions[col]
@@ -414,9 +434,9 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
         
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=55)
-        btn_desc_sub = dpg.add_button(label=header_label("Description"), tag="btn_desc_sub", width=300)
-        btn_status_sub = dpg.add_button(label=header_label("Status"), tag="btn_status_sub", width=100)
-        btn_priority_sub = dpg.add_button(label=header_label("Priority"), tag="btn_priority_sub", width=100)
+        btn_desc_sub = dpg.add_button(label=header_label("Description"), tag="btn_desc_sub",callback=lambda: sub_sort_by("Description"), width=300)
+        btn_status_sub = dpg.add_button(label=header_label("Status"), tag="btn_status_sub",callback=lambda: sub_sort_by("Status"), width=100)
+        btn_priority_sub = dpg.add_button(label=header_label("Priority"), tag="btn_priority_sub", callback=lambda: sub_sort_by("Priority"), width=100)
         btn_actions_sub = dpg.add_button(label="Actions", tag="btn_actions_sub", width=160)
 
     with dpg.group(horizontal=True):
@@ -455,14 +475,8 @@ dpg.set_viewport_large_icon(icon_path)
 dpg.setup_dearpygui()
 dpg.set_primary_window("main_window", True)
 
-print("Ventana principal existe:", dpg.does_item_exist("main_window"))
-print("Parent de main_tasks_container:", dpg.get_item_parent("main_tasks_container"))
-print("Tareas en memoria:", len(qm._tasks))
-for t in qm._tasks:
-    print("  -", repr(t), type(t), getattr(t, "status", None), getattr(t, "priority", None))
 refresh_subtasks()
 refresh_main_tasks()
 
 dpg.show_viewport()
 dpg.start_dearpygui()
-

@@ -3,11 +3,12 @@ import uuid
 from enum import Enum
 
 class TaskStatus(Enum):
-    PENDING = "pending"
-    PROCESSING = "processing"
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
     DONE = "DONE"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+
 
 class TaskPriority(Enum):
     LOW = 1
@@ -15,20 +16,54 @@ class TaskPriority(Enum):
     HIGH = 3
 
 class Task:
-    def __init__(self, description, priority=TaskPriority.MEDIUM):
-        self.id = str(uuid.uuid4())
+    def __init__(
+        self,
+        description,
+        priority=TaskPriority.MEDIUM,
+        status=TaskStatus.PENDING,
+        parent_id=None,
+        id=None,
+        created_at=None,
+        updated_at=None,
+        completed_at=None,
+        cancelled_at=None,
+        processing_started_at=None
+    ):
+        # ID: si viene del JSON, úsalo; si no, genera uno nuevo
+        self.id = id or str(uuid.uuid4())
         self.description = description
+
+        # 🔥 Convertir strings a Enum si vienen del JSON
+        if isinstance(priority, str):
+            priority = TaskPriority[priority.upper()]
+        if isinstance(status, str):
+            status = TaskStatus(status.upper())
+
         self.priority = priority
+        self._status = status
 
-        self.created_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
+        self.parent_id = parent_id
 
-        self.completed_at = None
-        self.cancelled_at = None
-        self.processing_started_at = None
+        # Fechas: si vienen del JSON, parsearlas; si no, usar ahora
+        self.created_at = (
+            datetime.fromisoformat(created_at) if isinstance(created_at, str) else created_at or datetime.utcnow()
+        )
+        self.updated_at = (
+            datetime.fromisoformat(updated_at) if isinstance(updated_at, str) else updated_at or datetime.utcnow()
+        )
 
-        # IMPORTANT: initialize internal status without triggering setter
-        self._status = TaskStatus.PENDING
+        self.completed_at = (
+            datetime.fromisoformat(completed_at) if isinstance(completed_at, str) else completed_at
+        )
+        self.cancelled_at = (
+            datetime.fromisoformat(cancelled_at) if isinstance(cancelled_at, str) else cancelled_at
+        )
+        self.processing_started_at = (
+            datetime.fromisoformat(processing_started_at) if isinstance(processing_started_at, str) else processing_started_at
+        )
+
+
+
  
     @property
     def status(self):
@@ -82,11 +117,12 @@ class Task:
     def from_dict(cls, data):
         task = cls(
             description=data["description"],
-            priority=TaskPriority[data.get("priority", "MEDIUM")]
+            priority=TaskPriority[data.get("priority", "MEDIUM")],
+            parent_id=data.get("parent_id")  # ← CLAVE
         )
 
         task.id = data["id"]
-        task._status = TaskStatus(data["status"])  # ← FIX
+        task._status = TaskStatus(data["status"])
 
         task.created_at = datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None
         task.updated_at = datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else None
@@ -95,6 +131,9 @@ class Task:
         task.cancelled_at = datetime.fromisoformat(data["cancelled_at"]) if data.get("cancelled_at") else None
 
         return task
+
+
+
 
 
 

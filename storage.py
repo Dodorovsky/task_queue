@@ -19,17 +19,24 @@ def load_tasks(filepath):
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
-    except FileNotFoundError:
-        return []
-    except json.JSONDecodeError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return []
 
+    # NUEVO: soportar ambos formatos
+    if isinstance(data, dict):
+        items = data.get("tasks", [])
+    else:
+        # formato viejo: lista directa
+        items = data
+
     tasks = []
-    for item in data:
-        task = Task.from_dict(item)   
+    for item in items:
+        task = Task.from_dict(item)
         tasks.append(task)
 
     return tasks
+
+
 
 
 

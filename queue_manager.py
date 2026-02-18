@@ -9,6 +9,7 @@ class QueueManager:
         self.filepath = filepath
         self._tasks = self.load(filepath)
         self.selected_task_id = None
+        self.pending_delete_task_id = None
 
     def add_task(self, description, priority=TaskPriority.MEDIUM):
         task = Task(description, priority=priority)
@@ -17,7 +18,6 @@ class QueueManager:
 
     def get_all_tasks(self):
         return self._tasks
-
 
     def get_next_task(self):
         pending = [t for t in self._tasks if t.status == TaskStatus.PENDING]
@@ -53,7 +53,7 @@ class QueueManager:
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "cancelled_at": self.cancelled_at.isoformat() if self.cancelled_at else None,
             "processing_started_at": self.processing_started_at.isoformat() if self.processing_started_at else None,
-            "parent_id": self.parent_id,  # ← NUEVO
+            "parent_id": self.parent_id,  
         }
 
     def cancel_task(self, task_id):
@@ -66,8 +66,6 @@ class QueueManager:
         data = [task.to_dict() for task in self._tasks]
         with open(filename, "w") as f:
             json.dump(data, f, indent=2)
-
-
 
     def load(self, filepath):
         try:

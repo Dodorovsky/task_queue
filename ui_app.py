@@ -82,7 +82,7 @@ def select_task_callback(sender, app_data, user_data):
     refresh_subtasks()            # refresh the lower window
 
     
-def sort_by(column):
+def sort_by(column, key):
     direction = sort_directions[column]
     sort_directions[column] *= -1
 
@@ -101,30 +101,12 @@ def sort_by(column):
     dpg.set_item_label("btn_desc", header_label("Description"))
     dpg.set_item_label("btn_status", header_label("Status"))
     dpg.set_item_label("btn_priority", header_label("Priority"))
+    
+    if key == "main":
+        refresh_main_tasks()
+    else:
+        refresh_subtasks()
 
-    refresh_main_tasks()
-
-def sub_sort_by(column):
-    direction = sort_directions[column]
-    sort_directions[column] *= -1
-
-    reverse = (direction == -1)
-
-    if column == "ID":
-        qm._tasks.sort(key=lambda t: t.id, reverse=reverse)
-    elif column == "Description":
-        qm._tasks.sort(key=lambda t: t.description.lower(), reverse=reverse)
-    elif column == "Status":
-        qm._tasks.sort(key=lambda t: t.status.value, reverse=reverse)
-    elif column == "Priority":
-        qm._tasks.sort(key=lambda t: t.priority.value, reverse=reverse)
-
-
-    dpg.set_item_label("btn_desc", header_label("Description"))
-    dpg.set_item_label("btn_status", header_label("Status"))
-    dpg.set_item_label("btn_priority", header_label("Priority"))
-
-    refresh_subtasks()
 
 def header_label(col):
     direction = sort_directions[col]
@@ -151,6 +133,18 @@ def confirm_add_subtask():
     refresh_main_tasks()
     refresh_subtasks()
 
+def open_delete_confirm(sender, app_data, user_data):
+    qm.pending_delete_task_id = user_data
+    dpg.show_item("delete_confirm_popup")
+    
+def confirm_delete_callback():
+    if qm.pending_delete_task_id is not None:
+        delete_task_callback(None, None, qm.pending_delete_task_id)
+        qm.pending_delete_task_id = None
+    dpg.hide_item("delete_confirm_popup")
+    
+    
+
 
 def refresh_main_tasks():
     # borrar SOLO filas (slot 1)
@@ -158,6 +152,10 @@ def refresh_main_tasks():
     if rows:
         for r in rows:
             dpg.delete_item(r)
+            
+
+
+
 
     for t in qm._tasks:
         if t.parent_id is not None:
@@ -167,10 +165,10 @@ def refresh_main_tasks():
 
             # Description
             if t.status == TaskStatus.DONE:
-                desc_item = dpg.add_text(t.description)
+                desc_item = dpg.add_text(t.description.upper())
                 dpg.configure_item(desc_item, color=(180, 199, 224))
             else:
-                desc_item = dpg.add_text(t.description)
+                desc_item = dpg.add_text(t.description.upper())
                 dpg.configure_item(desc_item, color=(150, 200, 255))
 
             # Status
@@ -214,7 +212,11 @@ def refresh_main_tasks():
                     callback=select_task_callback,
                     user_data=t.id
                 )
-
+                btn_add_sub = dpg.add_button(
+                    label="+ Subtask",
+                    callback=open_subtask_popup,
+                    user_data=t.id 
+                )
                 btn_done = dpg.add_button(
                     label="Done",
                     callback=mark_done_callback,
@@ -226,15 +228,11 @@ def refresh_main_tasks():
                     callback=mark_undone_callback,
                     user_data=t.id
                 )
-                btn_add_sub = dpg.add_button(
-                    label="+ Subtask",
-                    callback=open_subtask_popup,
-                    user_data=t.id 
-                )
+
 
                 btn_delete = dpg.add_button(
                     label="Delete",
-                    callback=delete_task_callback,
+                    callback=open_delete_confirm,
                     user_data=t.id
                 )
 
@@ -242,7 +240,7 @@ def refresh_main_tasks():
             dpg.bind_item_theme(btn_done, "done_button_theme")
             dpg.bind_item_theme(btn_delete, "delete_button_theme")
             dpg.bind_item_theme(btn_undone, "undone_button_theme")
-            dpg.bind_item_theme(btn_add_sub, "select_button_theme")
+            dpg.bind_item_theme(btn_add_sub, "add_subtask_button_theme")
             dpg.bind_item_theme(btn_select, "select_button_theme")
 
 
@@ -277,7 +275,7 @@ def refresh_subtasks():
 
             # Priority text (clickable)
             priority_tag = f"priority_text_{t.id}"
-            priority_text = dpg.add_selectable(label=t.priority.name.upper(), tag=priority_tag)
+            priority_text = dpg.add_selectable(label=t.priority.name, tag=priority_tag)
 
             # Apply your existing color themes
             if t.priority.name == "HIGH":
@@ -294,7 +292,7 @@ def refresh_subtasks():
                 elif t.priority.name == "MEDIUM":
                     dpg.bind_item_theme(priority_text, "priority_mediumdone_theme")
                 else:
-                    dpg.bind_item_theme(priority_text, "priority_done_theme")
+                    dpg.bind_item_theme(priority_text, "priority_lowdone_theme")
 
 
             with dpg.popup(parent=priority_text, mousebutton=dpg.mvMouseButton_Left):
@@ -331,11 +329,17 @@ def open_subtask_popup(sender, app_data, user_data):
     dpg.set_value("subtask_input", "")
     dpg.show_item("subtask_popup")
 
-
 dpg.create_context()
 
-with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720):
+with dpg.window(tag="main_window", label="Task Queue UI", width=880, height=720):
     dpg.add_text("Add a new task")
+    
+    with dpg.window(label="Confirm Delete", modal=True, show=False, tag="delete_confirm_popup", no_title_bar=False):
+        dpg.add_text("Are you sure you want to delete this task and all its subtasks?")
+        with dpg.group(horizontal=True):
+            dpg.add_button(label="Yes", tag="delete_confirm_yes")
+            dpg.add_button(label="No", callback=lambda: dpg.hide_item("delete_confirm_popup"))
+    dpg.set_item_callback("delete_confirm_yes", confirm_delete_callback)
 
     dpg.add_input_text(label="Title", tag="title_input")
     dpg.add_combo(["LOW", "MEDIUM", "HIGH"],
@@ -343,9 +347,12 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
                   label="Priority",
                   tag="priority_combo")
     add_task_btn = dpg.add_button(label="Add Task", callback=add_task_callback)
-
-    dpg.add_spacer(height=10)
-    dpg.add_text("Task List")
+    
+    dpg.add_spacer(height=20)
+    with dpg.group(horizontal=True):
+         
+        dpg.add_spacer(width=2)
+        dpg.add_text("TASK LIST")
     
     # PRIORITY DONE COLORS
     with dpg.theme(tag="priority_highdone_theme"):
@@ -380,6 +387,11 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (112, 69, 6), category=dpg.mvThemeCat_Core)
 
+    with dpg.theme(tag="add_subtask_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (125, 91, 51), category=dpg.mvThemeCat_Core)
+
+
     with dpg.theme(tag="done_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (45, 87, 47), category=dpg.mvThemeCat_Core)
@@ -391,24 +403,28 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
     with dpg.theme(tag="delete_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (105, 34, 13), category=dpg.mvThemeCat_Core)
+# 105, 34, 13  125, 65, 51
 
 
     with dpg.theme(tag="header_button_theme"):
         with dpg.theme_component(dpg.mvButton):
             dpg.add_theme_color(dpg.mvThemeCol_Button, (71, 49, 46), category=dpg.mvThemeCat_Core)
-            
-    dpg.bind_item_theme(add_task_btn, "header_button_theme")
-    
+        
+
+    with dpg.theme(tag="add_task_button_theme"):
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (2, 79, 4), category=dpg.mvThemeCat_Core)
+    dpg.bind_item_theme(add_task_btn, "add_task_button_theme")     
 
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=0)   
-        btn_desc = dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description"), width=300)
-        btn_status = dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status"), width=100)
-        btn_priority = dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority"), width=100)
+        btn_desc = dpg.add_button(label=header_label("Description"), tag="btn_desc", callback=lambda: sort_by("Description", "main"), width=300)
+        btn_status = dpg.add_button(label=header_label("Status"), tag="btn_status", callback=lambda: sort_by("Status", "main"), width=100)
+        btn_priority = dpg.add_button(label=header_label("Priority"), tag="btn_priority", callback=lambda: sort_by("Priority", "main"), width=100)
         btn_apcionts = dpg.add_button(label="Actions", tag="btn_actions", width=290)
 
     
-    with dpg.child_window(tag="main_tasks_container", width=830, height=225, border=True):
+    with dpg.child_window(tag="main_tasks_container", width=843, height=225, border=True):
         with dpg.table(
             tag="main_tasks_table",
             header_row=False,
@@ -434,9 +450,9 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
         
     with dpg.group(horizontal=True):
         dpg.add_spacer(width=55)
-        btn_desc_sub = dpg.add_button(label=header_label("Description"), tag="btn_desc_sub",callback=lambda: sub_sort_by("Description"), width=300)
-        btn_status_sub = dpg.add_button(label=header_label("Status"), tag="btn_status_sub",callback=lambda: sub_sort_by("Status"), width=100)
-        btn_priority_sub = dpg.add_button(label=header_label("Priority"), tag="btn_priority_sub", callback=lambda: sub_sort_by("Priority"), width=100)
+        btn_desc_sub = dpg.add_button(label=header_label("Description"), tag="btn_desc_sub",callback=lambda: sort_by("Description", "sub"), width=300)
+        btn_status_sub = dpg.add_button(label=header_label("Status"), tag="btn_status_sub",callback=lambda: sort_by("Status", "sub"), width=100)
+        btn_priority_sub = dpg.add_button(label=header_label("Priority"), tag="btn_priority_sub", callback=lambda: sort_by("Priority", "sub"), width=100)
         btn_actions_sub = dpg.add_button(label="Actions", tag="btn_actions_sub", width=160)
 
     with dpg.group(horizontal=True):
@@ -467,7 +483,7 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=863, height=720)
         dpg.add_button(label="Cancel", callback=lambda: dpg.hide_item("subtask_popup"))
 
 
-dpg.create_viewport(title="Task Queue UI", width=863, height=720, min_width=600, max_width=863,
+dpg.create_viewport(title="Task Queue UI", width=880, height=720, min_width=600, max_width=880,
                     min_height=720, max_height=720)
 icon_path = resource_path("logo.ico")
 dpg.set_viewport_small_icon(icon_path)

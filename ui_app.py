@@ -149,9 +149,6 @@ def confirm_delete_callback():
         qm.pending_delete_task_id = None
     dpg.hide_item("delete_confirm_popup")
     
-    
-
-
 def refresh_main_tasks():
     global selected_task_id
 
@@ -359,15 +356,13 @@ with dpg.window(tag="main_window", label="Task Queue UI", width=880, height=730)
         dpg.add_spacer(width=2)
         dpg.add_text("TASK LIST")
         
-
     # ROW THEME
     with dpg.theme(tag="selected_row_theme"):
         # aplicamos el theme específicamente a filas de tabla
         with dpg.theme_component(dpg.mvTableRow):
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (70, 120, 180))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (70, 120, 180))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (110, 109, 52))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (110, 109, 52))
             dpg.add_theme_color(dpg.mvThemeCol_Text, (255, 255, 255))
-
     
     # PRIORITY DONE COLORS
     with dpg.theme(tag="priority_highdone_theme"):
